@@ -2,62 +2,225 @@
   "id": "network-proxy-watchdog",
   "name": "网络代理看门狗",
   "description": "OpenClaw 代理健康检查与自动切线插件，支持可插拔驱动。",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "enabled": { "type": "boolean" },
-      "stateFile": { "type": "string" },
+      "enabled": {
+        "type": "boolean"
+      },
+      "stateFile": {
+        "type": "string"
+      },
       "healthCheck": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": { "type": "string", "enum": ["telegram-bot-api", "http"] },
-          "url": { "type": "string" },
-          "method": { "type": "string", "enum": ["GET", "HEAD"] },
-          "timeoutMs": { "type": "number", "minimum": 1000, "maximum": 120000 },
-          "intervalMs": { "type": "number", "minimum": 1000, "maximum": 86400000 },
-          "expectedStatusCodes": { "type": "array", "items": { "type": "number" } },
-          "proxyUrl": { "type": "string" },
-          "telegramApiBaseUrl": { "type": "string" }
+          "kind": {
+            "type": "string",
+            "enum": [
+              "telegram-bot-api",
+              "http"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "HEAD"
+            ]
+          },
+          "timeoutMs": {
+            "type": "number",
+            "minimum": 1000,
+            "maximum": 120000
+          },
+          "intervalMs": {
+            "type": "number",
+            "minimum": 1000,
+            "maximum": 86400000
+          },
+          "expectedStatusCodes": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "proxyUrl": {
+            "type": "string"
+          },
+          "telegramApiBaseUrl": {
+            "type": "string"
+          }
         }
       },
       "switchPolicy": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "failureThreshold": { "type": "number", "minimum": 1, "maximum": 1000 },
-          "switchCooldownMs": { "type": "number", "minimum": 0, "maximum": 86400000 },
-          "candidates": { "type": "array", "items": { "type": "string" } }
+          "failureThreshold": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "switchCooldownMs": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
       "driver": {
         "type": "object",
         "additionalProperties": true,
         "properties": {
-          "type": { "type": "string", "enum": ["mihomo", "custom-command"] },
-          "controllerUrl": { "type": "string" },
-          "secret": { "type": "string" },
-          "secretEnv": { "type": "string" },
-          "groupName": { "type": "string" },
-          "shell": { "type": "string" },
-          "listCommand": { "type": "string" },
-          "currentCommand": { "type": "string" },
-          "switchCommand": { "type": "string" },
-          "describeCommand": { "type": "string" },
-          "env": { "type": "object", "additionalProperties": { "type": "string" } }
+          "type": {
+            "type": "string",
+            "enum": [
+              "mihomo",
+              "custom-command",
+              "custom-webhook"
+            ]
+          },
+          "controllerUrl": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "secretEnv": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "shell": {
+            "type": "string"
+          },
+          "listCommand": {
+            "type": "string"
+          },
+          "currentCommand": {
+            "type": "string"
+          },
+          "switchCommand": {
+            "type": "string"
+          },
+          "describeCommand": {
+            "type": "string"
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "timeoutMs": {
+            "type": "number",
+            "minimum": 1000,
+            "maximum": 120000
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "token": {
+            "type": "string"
+          },
+          "tokenEnv": {
+            "type": "string"
+          },
+          "tokenHeaderName": {
+            "type": "string"
+          },
+          "tokenPrefix": {
+            "type": "string"
+          },
+          "listRequest": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "currentRequest": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "switchRequest": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "describeRequest": {
+            "type": "object",
+            "additionalProperties": true
+          }
         }
       }
     }
   },
   "uiHints": {
-    "stateFile": { "label": "状态文件" },
-    "healthCheck.kind": { "label": "健康检查类型" },
-    "healthCheck.proxyUrl": { "label": "探测代理地址" },
-    "switchPolicy.failureThreshold": { "label": "失败阈值" },
-    "switchPolicy.switchCooldownMs": { "label": "切换冷却时间" },
-    "driver.type": { "label": "代理驱动类型" },
-    "driver.secret": { "label": "控制器密钥", "sensitive": true, "advanced": true }
+    "stateFile": {
+      "label": "状态文件"
+    },
+    "healthCheck.kind": {
+      "label": "健康检查类型"
+    },
+    "healthCheck.proxyUrl": {
+      "label": "探测代理地址"
+    },
+    "switchPolicy.failureThreshold": {
+      "label": "失败阈值"
+    },
+    "switchPolicy.switchCooldownMs": {
+      "label": "切换冷却时间"
+    },
+    "driver.type": {
+      "label": "代理驱动类型"
+    },
+    "driver.secret": {
+      "label": "控制器密钥",
+      "sensitive": true,
+      "advanced": true
+    },
+    "driver.baseUrl": {
+      "label": "Webhook 基础地址"
+    },
+    "driver.timeoutMs": {
+      "label": "Webhook 超时时间"
+    },
+    "driver.token": {
+      "label": "Webhook 鉴权令牌",
+      "sensitive": true,
+      "advanced": true
+    },
+    "driver.tokenEnv": {
+      "label": "Webhook 鉴权环境变量",
+      "advanced": true
+    },
+    "driver.listRequest.path": {
+      "label": "列表接口路径",
+      "advanced": true
+    },
+    "driver.currentRequest.path": {
+      "label": "当前线路接口路径",
+      "advanced": true
+    },
+    "driver.switchRequest.path": {
+      "label": "切换接口路径",
+      "advanced": true
+    }
   }
 }

@@ -2,7 +2,16 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import type { CustomCommandDriverConfig, DriverConfig, MihomoDriverConfig, RuntimeConfig } from "./types.js";
+import type {
+  CustomCommandDriverConfig,
+  CustomWebhookDriverConfig,
+  CustomWebhookRequestConfig,
+  CustomWebhookSwitchRequestConfig,
+  DriverConfig,
+  HttpMethod,
+  MihomoDriverConfig,
+  RuntimeConfig,
+} from "./types.js";
 
 type JsonObject = Record<string, unknown>;
 type AnyConfig = Record<string, any>;
@@ -62,6 +71,46 @@ function normalizeDriver(rawDriver: unknown): DriverConfig {
     return config;
   }
 
+  if (type === "custom-webhook") {
+    const config: CustomWebhookDriverConfig = {
+      type: "custom-webhook",
+      baseUrl: readString(raw.baseUrl) ?? "http://127.0.0.1:8080",
+      timeoutMs: clamp(readNumber(raw.timeoutMs) ?? 15_000, 1_000, 120_000),
+      headers: normalizeStringMap(raw.headers),
+      token: readString(raw.token),
+      tokenEnv: readString(raw.tokenEnv),
+      tokenHeaderName: readString(raw.tokenHeaderName) ?? "Authorization",
+      tokenPrefix: readString(raw.tokenPrefix) ?? "Bearer ",
+      listRequest: normalizeWebhookRequest(raw.listRequest, {
+        method: "GET",
+        path: "/targets",
+        resultPath: "targets",
+      }),
+      currentRequest: normalizeWebhookRequest(raw.currentRequest, {
+        method: "GET",
+        path: "/targets/current",
+        resultPath: "current",
+      }),
+      switchRequest: normalizeWebhookSwitchRequest(raw.switchRequest, {
+        method: "POST",
+        path: "/targets/switch",
+        body: '{"target":"{{target}}","current":"{{current}}"}',
+        resultPath: null,
+        fromPath: "from",
+        toPath: "to",
+        changedPath: "changed",
+      }),
+      describeRequest: isPlainObject(raw.describeRequest)
+        ? normalizeWebhookRequest(raw.describeRequest, {
+            method: "GET",
+            path: "/describe",
+            resultPath: null,
+          })
+        : null,
+    };
+    return config;
+  }
+
   const config: MihomoDriverConfig = {
     type: "mihomo",
     controllerUrl: readString(raw.controllerUrl) ?? "http://127.0.0.1:9090",
@@ -72,12 +121,61 @@ function normalizeDriver(rawDriver: unknown): DriverConfig {
   return config;
 }
 
+function normalizeWebhookRequest(rawRequest: unknown, fallback: {
+  method: HttpMethod;
+  path: string;
+  resultPath: string | null;
+  body?: string | null;
+}): CustomWebhookRequestConfig {
+  const raw = isPlainObject(rawRequest) ? rawRequest as AnyConfig : {};
+  return {
+    method: normalizeHttpMethod(readString(raw.method), fallback.method),
+    path: readString(raw.path) ?? fallback.path,
+    headers: normalizeStringMap(raw.headers),
+    body: readString(raw.body) ?? fallback.body ?? null,
+    resultPath: readString(raw.resultPath) ?? fallback.resultPath,
+  };
+}
+
+function normalizeWebhookSwitchRequest(rawRequest: unknown, fallback: {
+  method: HttpMethod;
+  path: string;
+  resultPath: string | null;
+  body?: string | null;
+  fromPath?: string | null;
+  toPath?: string | null;
+  changedPath?: string | null;
+}): CustomWebhookSwitchRequestConfig {
+  const base = normalizeWebhookRequest(rawRequest, fallback);
+  const raw = isPlainObject(rawRequest) ? rawRequest as AnyConfig : {};
+  return {
+    ...base,
+    fromPath: readString(raw.fromPath) ?? fallback.fromPath ?? null,
+    toPath: readString(raw.toPath) ?? fallback.toPath ?? null,
+    changedPath: readString(raw.changedPath) ?? fallback.changedPath ?? null,
+  };
+}
+
 function normalizeHealthCheckKind(value: string | null): RuntimeConfig["healthCheck"]["kind"] {
   return value === "http" ? "http" : "telegram-bot-api";
 }
 
 function normalizeMethod(value: string | null): RuntimeConfig["healthCheck"]["method"] {
   return value === "HEAD" ? "HEAD" : "GET";
+}
+
+function normalizeHttpMethod(value: string | null, fallback: HttpMethod): HttpMethod {
+  switch (value) {
+    case "GET":
+    case "HEAD":
+    case "POST":
+    case "PUT":
+    case "PATCH":
+    case "DELETE":
+      return value;
+    default:
+      return fallback;
+  }
 }
 
 function normalizeStringArray(value: unknown): string[] {

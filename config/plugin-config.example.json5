@@ -9,7 +9,7 @@
     kind: "telegram-bot-api",
 
     // kind=http 时使用。
-    url: "https://example.com/healthz",
+    url: "https://example.invalid/healthz",
 
     method: "GET",
     timeoutMs: 15000,
@@ -31,11 +31,64 @@
     ]
   },
 
+  // 三选一：mihomo / custom-command / custom-webhook
   driver: {
-    // 第一个驱动：mihomo
     type: "mihomo",
     controllerUrl: "http://127.0.0.1:9090",
     secretEnv: "MIHOMO_CONTROLLER_SECRET",
     groupName: "专项代理"
   }
 }
+
+// custom-command 示例
+// {
+//   driver: {
+//     type: "custom-command",
+//     shell: "/bin/bash",
+//     listCommand: "printf 'primary\\nbackup\\n'",
+//     currentCommand: "cat /tmp/current-target.txt",
+//     switchCommand: "/usr/local/bin/switch-line {{target}}",
+//     describeCommand: "/usr/local/bin/show-proxy-status",
+//     env: {
+//       PROFILE: "production"
+//     }
+//   }
+// }
+
+// custom-webhook 示例
+// {
+//   driver: {
+//     type: "custom-webhook",
+//     baseUrl: "https://proxy-control.example.invalid/api",
+//     timeoutMs: 15000,
+//     tokenEnv: "PROXY_CONTROL_TOKEN",
+//     tokenHeaderName: "Authorization",
+//     tokenPrefix: "Bearer ",
+//     headers: {
+//       "x-client": "openclaw-network-proxy-watchdog"
+//     },
+//     listRequest: {
+//       method: "GET",
+//       path: "/targets",
+//       resultPath: "data.targets"
+//     },
+//     currentRequest: {
+//       method: "GET",
+//       path: "/targets/current",
+//       resultPath: "data.current"
+//     },
+//     switchRequest: {
+//       method: "POST",
+//       path: "/targets/switch",
+//       body: "{\"target\":\"{{target}}\",\"current\":\"{{current}}\"}",
+//       fromPath: "data.from",
+//       toPath: "data.to",
+//       changedPath: "data.changed"
+//     },
+//     describeRequest: {
+//       method: "GET",
+//       path: "/describe",
+//       resultPath: "data"
+//     }
+//   }
+// }

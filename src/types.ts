@@ -5,6 +5,8 @@ export interface LoggerLike {
   debug?(message: string): void;
 }
 
+export type HttpMethod = "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
+
 export interface HealthCheckConfig {
   kind: "telegram-bot-api" | "http";
   url: string | null;
@@ -40,7 +42,36 @@ export interface CustomCommandDriverConfig {
   env: Record<string, string>;
 }
 
-export type DriverConfig = MihomoDriverConfig | CustomCommandDriverConfig;
+export interface CustomWebhookRequestConfig {
+  method: HttpMethod;
+  path: string;
+  headers: Record<string, string>;
+  body: string | null;
+  resultPath: string | null;
+}
+
+export interface CustomWebhookSwitchRequestConfig extends CustomWebhookRequestConfig {
+  fromPath: string | null;
+  toPath: string | null;
+  changedPath: string | null;
+}
+
+export interface CustomWebhookDriverConfig {
+  type: "custom-webhook";
+  baseUrl: string;
+  timeoutMs: number;
+  headers: Record<string, string>;
+  token: string | null;
+  tokenEnv: string | null;
+  tokenHeaderName: string;
+  tokenPrefix: string;
+  listRequest: CustomWebhookRequestConfig;
+  currentRequest: CustomWebhookRequestConfig;
+  switchRequest: CustomWebhookSwitchRequestConfig;
+  describeRequest: CustomWebhookRequestConfig | null;
+}
+
+export type DriverConfig = MihomoDriverConfig | CustomCommandDriverConfig | CustomWebhookDriverConfig;
 
 export interface RuntimeConfig {
   enabled: boolean;

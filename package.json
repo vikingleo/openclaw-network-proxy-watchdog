@@ -1,6 +1,6 @@
 {
   "name": "network-proxy-watchdog",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Portable OpenClaw network proxy watchdog plugin with pluggable drivers",
   "type": "module",
   "keywords": [
