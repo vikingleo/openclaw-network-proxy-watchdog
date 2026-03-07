@@ -1,0 +1,37 @@
+{
+  "name": "network-proxy-watchdog",
+  "version": "0.1.0",
+  "description": "Portable OpenClaw network proxy watchdog plugin with pluggable drivers",
+  "type": "module",
+  "keywords": [
+    "openclaw",
+    "plugin",
+    "proxy",
+    "watchdog",
+    "mihomo"
+  ],
+  "files": [
+    "index.ts",
+    "openclaw.plugin.json",
+    "README.md",
+    "CHANGELOG.md",
+    "config/**/*",
+    "src/**/*"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
