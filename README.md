@@ -22,6 +22,8 @@
 - OpenClaw 标准插件入口
 - 后台 service，跟随 OpenClaw 启停
 - CLI 工具集
+- Telegram 交互式按钮控制面板
+- 插件文本命令与按钮回调统一权限控制
 - 健康检查主循环
 - 连续失败计数
 - 失败到阈值后自动切线
@@ -47,6 +49,7 @@
 - 切线决策
 - 状态记录
 - CLI 与 OpenClaw service 生命周期接入
+- 交互式管理命令
 
 ### 2. 驱动层
 
@@ -62,6 +65,50 @@
 - `mihomo`
 - `custom-command`
 - `custom-webhook`
+
+## Telegram 交互控制
+
+插件新增管理员命令：
+
+```bash
+/proxywd
+```
+
+该命令会返回一个按钮面板，支持：
+
+- 查看概览
+- 查看当前线路
+- 查看驱动摘要
+- 打开切线面板
+- 立即执行一轮巡检
+- 通过按钮直接切线
+
+### 权限模型
+
+插件命令遵循两层控制：
+
+1. **平台授权**：调用者必须先通过 OpenClaw 命令授权检查。
+2. **插件管理员**：调用者还必须命中 `commandAccess.adminSenderIds`。
+
+也就是说：
+
+- 文本命令只能管理员执行
+- Telegram 按钮回调最终也会落成插件命令，所以同样只能管理员执行
+
+如果 `commandAccess.adminSenderIds` 为空，插件会退回到平台已有授权结果。
+
+### 推荐配置
+
+```json5
+{
+  commandAccess: {
+    adminSenderIds: [
+      "telegram:YOUR_USER_ID",
+      "vocechat:user:YOUR_USER_ID"
+    ]
+  }
+}
+```
 
 ## 驱动说明
 
@@ -199,13 +246,6 @@
 - `data.result.current`
 - `items[0].name`
 
-默认约定是：
-
-- `listRequest` 读取字符串数组
-- `currentRequest` 读取单个字符串
-- `switchRequest` 默认仍以当前切换目标为准；若接口返回了 `from/to/changed`，则按映射覆盖
-- `describeRequest` 可选；未配置时返回驱动自身摘要
-
 ## 健康检查说明
 
 插件支持两种健康检查模式：
@@ -243,43 +283,55 @@
 
 ## 常用命令
 
-### 查看状态
+### 聊天控制台
+
+```bash
+/proxywd
+/proxywd status
+/proxywd current
+/proxywd driver
+/proxywd switch-menu
+/proxywd run-once
+/proxywd switch 2
+```
+
+### CLI 查看状态
 
 ```bash
 openclaw proxy-watchdog status
 ```
 
-### 查看驱动详情
+### CLI 查看驱动详情
 
 ```bash
 openclaw proxy-watchdog describe-driver
 ```
 
-### 列出目标
+### CLI 列出目标
 
 ```bash
 openclaw proxy-watchdog list-targets
 ```
 
-### 查看当前目标
+### CLI 查看当前目标
 
 ```bash
 openclaw proxy-watchdog current-target
 ```
 
-### 手动切线
+### CLI 手动切线
 
 ```bash
 openclaw proxy-watchdog switch --target backup
 ```
 
-### 立即跑一轮检测
+### CLI 立即跑一轮检测
 
 ```bash
 openclaw proxy-watchdog run-once
 ```
 
-### 插件烟测
+### CLI 插件烟测
 
 ```bash
 openclaw proxy-watchdog self-test
@@ -290,12 +342,38 @@ openclaw proxy-watchdog self-test
 脱敏示例见：
 
 - `config/plugin-config.example.json5:1`
+- `config/plugin-config.custom-webhook.example.json5:1`
+- `config/runtime-templates/openclaw-entry.custom-webhook.example.json:1`
+
+## Webhook 适配示例
+
+仓库内附带了一个可直接运行的演示适配器：
+
+- `examples/custom-webhook-adapter-demo.mjs:1`
+
+启动示例：
+
+```bash
+DEMO_TOKEN=demo-token node examples/custom-webhook-adapter-demo.mjs
+```
+
+然后把插件配置指向：
+
+- `baseUrl = http://127.0.0.1:18795/api`
+- `tokenEnv = PROXY_CONTROL_TOKEN`
+
+如果只是想切换当前运行配置，不建议直接覆盖在线配置；更稳的方式是先参考：
+
+- `config/runtime-templates/openclaw-entry.custom-webhook.example.json:1`
+
+把其中的 `network-proxy-watchdog` 条目合并进 `openclaw.json`，再重启网关验证。
 
 ## 文件结构
 
 - `index.ts`：插件入口
 - `openclaw.plugin.json`：插件声明与配置模式
 - `src/config.ts`：配置归一化
+- `src/chat-commands.ts`：聊天命令与按钮交互
 - `src/service.ts`：健康检查与自动切线主循环
 - `src/health-check.ts`：健康检查实现
 - `src/driver-factory.ts`：驱动工厂
@@ -321,6 +399,7 @@ npm run build
 - 决策
 - 切换
 - 记录
+- 提供管理员控制面板
 
 这个插件不负责：
 

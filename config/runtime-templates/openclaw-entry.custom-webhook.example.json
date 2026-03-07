@@ -1,0 +1,59 @@
+{
+  "network-proxy-watchdog": {
+    "enabled": true,
+    "config": {
+      "enabled": true,
+      "stateFile": "/path/to/state/network-proxy-watchdog/state.json",
+      "healthCheck": {
+        "kind": "telegram-bot-api",
+        "timeoutMs": 15000,
+        "intervalMs": 60000,
+        "proxyUrl": "http://127.0.0.1:7890",
+        "telegramApiBaseUrl": "https://api.telegram.org"
+      },
+      "switchPolicy": {
+        "failureThreshold": 3,
+        "switchCooldownMs": 300000
+      },
+      "commandAccess": {
+        "adminSenderIds": [
+          "telegram:YOUR_USER_ID"
+        ]
+      },
+      "driver": {
+        "type": "custom-webhook",
+        "baseUrl": "http://127.0.0.1:18795/api",
+        "timeoutMs": 15000,
+        "tokenEnv": "PROXY_CONTROL_TOKEN",
+        "tokenHeaderName": "Authorization",
+        "tokenPrefix": "Bearer ",
+        "headers": {
+          "x-client": "openclaw-network-proxy-watchdog"
+        },
+        "listRequest": {
+          "method": "GET",
+          "path": "/targets",
+          "resultPath": "data.targets"
+        },
+        "currentRequest": {
+          "method": "GET",
+          "path": "/targets/current",
+          "resultPath": "data.current"
+        },
+        "switchRequest": {
+          "method": "POST",
+          "path": "/targets/switch",
+          "body": "{\"target\":\"{{target}}\",\"current\":\"{{current}}\"}",
+          "fromPath": "data.from",
+          "toPath": "data.to",
+          "changedPath": "data.changed"
+        },
+        "describeRequest": {
+          "method": "GET",
+          "path": "/describe",
+          "resultPath": "data"
+        }
+      }
+    }
+  }
+}

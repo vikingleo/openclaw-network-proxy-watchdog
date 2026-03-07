@@ -1,4 +1,24 @@
 declare module "openclaw/plugin-sdk" {
+  export type ReplyPayload = {
+    text?: string;
+    isError?: boolean;
+    channelData?: Record<string, unknown>;
+  };
+
+  export type PluginCommandContext = {
+    senderId?: string;
+    channel: string;
+    channelId?: string;
+    isAuthorizedSender: boolean;
+    args?: string;
+    commandBody: string;
+    config: Record<string, unknown>;
+    from?: string;
+    to?: string;
+    accountId?: string;
+    messageThreadId?: number;
+  };
+
   export interface OpenClawPluginServiceContext {
     config: Record<string, unknown>;
     workspaceDir?: string;
@@ -46,5 +66,12 @@ declare module "openclaw/plugin-sdk" {
       registrar: (ctx: OpenClawPluginCliContext) => void | Promise<void>,
       opts?: { commands?: string[] },
     ): void;
+    registerCommand(command: {
+      name: string;
+      description: string;
+      acceptsArgs?: boolean;
+      requireAuth?: boolean;
+      handler(ctx: PluginCommandContext): ReplyPayload | Promise<ReplyPayload>;
+    }): void;
   }
 }

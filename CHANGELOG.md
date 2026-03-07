@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- 新增 `/proxywd` 管理命令，提供交互式按钮面板。
+- 插件文本命令与按钮回调统一走管理员权限控制。
+- 新增 `commandAccess.adminSenderIds` 配置项。
+- 补充 Telegram 交互式控制说明、运行配置模板与 webhook 适配示例。
+
 ## 0.2.0
 
 - 新增 `custom-webhook` 驱动。

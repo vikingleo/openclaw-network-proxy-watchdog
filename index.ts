@@ -1,6 +1,7 @@
 import type { OpenClawPluginApi, OpenClawPluginServiceContext } from "openclaw/plugin-sdk";
 
 import { buildRuntimeConfigFromPlugin } from "./src/config.js";
+import { registerProxyWatchdogCommand } from "./src/chat-commands.js";
 import { registerProxyWatchdogCli } from "./src/plugin-cli.js";
 import { NetworkProxyWatchdogService } from "./src/service.js";
 import type { LoggerLike } from "./src/types.js";
@@ -30,6 +31,12 @@ const plugin = {
       },
       { commands: ["proxy-watchdog"] },
     );
+
+    registerProxyWatchdogCommand(api, {
+      openclawConfig: api.config as Record<string, unknown>,
+      pluginConfig: api.pluginConfig,
+      logger,
+    });
 
     api.registerService({
       id: "network-proxy-watchdog",

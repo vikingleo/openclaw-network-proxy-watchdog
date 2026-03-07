@@ -24,6 +24,10 @@ export interface SwitchPolicyConfig {
   candidates: string[];
 }
 
+export interface PluginCommandAccessConfig {
+  adminSenderIds: string[];
+}
+
 export interface MihomoDriverConfig {
   type: "mihomo";
   controllerUrl: string;
@@ -78,6 +82,7 @@ export interface RuntimeConfig {
   stateFile: string;
   healthCheck: HealthCheckConfig;
   switchPolicy: SwitchPolicyConfig;
+  commandAccess: PluginCommandAccessConfig;
   driver: DriverConfig;
 }
 

@@ -41,6 +41,9 @@ export function buildRuntimeConfigFromPlugin(params: {
       switchCooldownMs: clamp(readNumber(raw.switchPolicy?.switchCooldownMs) ?? 300_000, 0, 86_400_000),
       candidates: normalizeStringArray(raw.switchPolicy?.candidates),
     },
+    commandAccess: {
+      adminSenderIds: normalizeStringArray(raw.commandAccess?.adminSenderIds),
+    },
     driver: normalizeDriver(raw.driver),
   };
 }
