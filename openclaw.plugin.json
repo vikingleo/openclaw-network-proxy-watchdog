@@ -2,7 +2,7 @@
   "id": "network-proxy-watchdog",
   "name": "网络代理看门狗",
   "description": "OpenClaw 代理健康检查与自动切线插件，支持可插拔驱动。",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
