@@ -1,0 +1,38 @@
+{
+  "network-proxy-watchdog": {
+    "enabled": true,
+    "config": {
+      "enabled": true,
+      "stateFile": "~/.local/state/openclaw-network-proxy-watchdog/state.json",
+      "healthCheck": {
+        "kind": "telegram-bot-api",
+        "timeoutMs": 15000,
+        "intervalMs": 60000,
+        "expectedStatusCodes": [
+          200
+        ],
+        "proxyUrl": "http://127.0.0.1:7890",
+        "telegramApiBaseUrl": "https://api.telegram.org"
+      },
+      "switchPolicy": {
+        "failureThreshold": 3,
+        "switchCooldownMs": 300000,
+        "candidates": [
+          "线路A",
+          "线路B"
+        ]
+      },
+      "commandAccess": {
+        "adminSenderIds": [
+          "telegram:YOUR_USER_ID"
+        ]
+      },
+      "driver": {
+        "type": "mihomo",
+        "controllerUrl": "http://127.0.0.1:9090",
+        "secretEnv": "MIHOMO_CONTROLLER_SECRET",
+        "groupName": "专项代理"
+      }
+    }
+  }
+}

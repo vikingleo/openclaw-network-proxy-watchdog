@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- 新增本地一键安装脚本与远程 bootstrap 脚本，支持检测 `.openclaw/extensions`、默认软链接安装、自动备份和回滚。
+
 ## 0.5.0
 
 - 自动切线策略改为在 `mihomo + telegram-bot-api` 模式下优先选择 Telegram 可用且延迟最低的线路。

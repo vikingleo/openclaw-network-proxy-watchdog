@@ -361,6 +361,7 @@ openclaw proxy-watchdog self-test
 
 - `config/plugin-config.example.json5:1`
 - `config/plugin-config.custom-webhook.example.json5:1`
+- `config/runtime-templates/openclaw-entry.mihomo.example.json:1`
 - `config/runtime-templates/openclaw-entry.custom-webhook.example.json:1`
 
 ## Webhook 适配示例
@@ -408,6 +409,89 @@ DEMO_TOKEN=demo-token node examples/custom-webhook-adapter-demo.mjs
 npm install
 npm run build
 ```
+
+## 一键安装
+
+仓库内附带一套一键安装脚本：
+
+- `scripts/bootstrap.sh:1`
+- `scripts/install.sh:1`
+- `scripts/install.mjs:1`
+
+远程一条命令示例：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vikingleo/openclaw-network-proxy-watchdog/master/scripts/bootstrap.sh | bash -s -- \
+  --openclaw-dir /path/to/openclaw \
+  --driver mihomo \
+  --controller-url http://127.0.0.1:9090 \
+  --group-name 专项代理 \
+  --candidate 香港A \
+  --candidate 日本B \
+  --admin-sender telegram:YOUR_USER_ID
+```
+
+`bootstrap.sh` 会先执行 `git clone`/`git fetch`，再调用本地 `install.sh`。
+
+脚本会执行这些动作：
+
+- 先检查目标宿主目录下的 `.openclaw/extensions` 是否存在
+- 自动识别当前属于 `fresh-install`、`upgrade`、`repair` 还是 `no-op`
+- 默认以软链接方式安装到 `.openclaw/extensions/network-proxy-watchdog`
+- 若发现已有安装、软链接错误、目录类型不符或配置漂移，会先创建可恢复备份，再只修复有问题的部分
+- 将插件配置写入或覆盖到 `openclaw.json` 的 `network-proxy-watchdog` 条目
+- 在备份目录里生成 `restore.sh` 回滚脚本
+- 默认自动执行 `npm install` 与 `npm run build`，也可用 `--skip-build` 跳过
+- 如果状态已经正确，默认不重复安装；如需强制重走，可追加 `--force`
+
+默认备份目录：
+
+- `<OPENCLAW_DIR>/.openclaw/backups/network-proxy-watchdog/<timestamp>/`
+
+Mihomo 一键安装示例：
+
+```bash
+./scripts/install.sh \
+  --openclaw-dir /path/to/openclaw \
+  --driver mihomo \
+  --controller-url http://127.0.0.1:9090 \
+  --group-name 专项代理 \
+  --candidate 香港A \
+  --candidate 日本B \
+  --admin-sender telegram:YOUR_USER_ID
+```
+
+Custom Webhook 一键安装示例：
+
+```bash
+./scripts/install.sh \
+  --openclaw-dir /path/to/openclaw \
+  --driver custom-webhook \
+  --base-url http://127.0.0.1:18795/api \
+  --admin-sender telegram:YOUR_USER_ID
+```
+
+远程 bootstrap 默认使用 HTTPS clone；如果你明确要走 SSH，可额外传入：
+
+```bash
+--ssh
+```
+
+如需固定到某个 tag / 分支 / commit，可额外传入：
+
+```bash
+--ref v0.5.0
+```
+
+如需复制安装而不是软链接，可额外传入：
+
+```bash
+--copy
+```
+
+如需回滚，直接执行安装输出里的：
+
+- `<backup-dir>/restore.sh`
 
 ## 设计边界
 
