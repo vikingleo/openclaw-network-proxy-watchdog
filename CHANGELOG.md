@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- 自动切线策略改为在 `mihomo + telegram-bot-api` 模式下优先选择 Telegram 可用且延迟最低的线路。
+- `mihomo` 驱动新增候选线路 Telegram 延迟测试能力，并在失败时回退到顺序切线。
+- Telegram 面板与 CLI 输出新增自动策略说明，统一展示当前选线策略。
+
 ## 0.4.0
 
 - 将 Telegram 控制面板改为原地编辑模式，不再每次按钮点击都新发一条消息。
