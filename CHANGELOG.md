@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - 自动切线策略改为在 `mihomo + telegram-bot-api` 模式下优先选择 Telegram 可用且延迟最低的线路。
 - `mihomo` 驱动新增候选线路 Telegram 延迟测试能力，并在失败时回退到顺序切线。
