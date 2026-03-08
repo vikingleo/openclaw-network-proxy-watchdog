@@ -93,6 +93,19 @@ export interface ProbeResult {
   statusCode?: number | null;
 }
 
+export interface DriverDelayProbeParams {
+  targets: string[];
+  url: string;
+  timeoutMs: number;
+}
+
+export interface DriverTargetDelayResult {
+  target: string;
+  ok: boolean;
+  delayMs: number | null;
+  summary: string;
+}
+
 export interface DriverDescribeResult {
   type: string;
   detail: Record<string, unknown>;
@@ -110,6 +123,7 @@ export interface NetworkProxyDriver {
   listTargets(): Promise<string[]>;
   getCurrentTarget(): Promise<string | null>;
   switchTarget(target: string): Promise<DriverSwitchResult>;
+  measureTargets?(params: DriverDelayProbeParams): Promise<DriverTargetDelayResult[]>;
 }
 
 export interface WatchdogState {

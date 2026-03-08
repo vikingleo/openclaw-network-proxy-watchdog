@@ -2,6 +2,22 @@ import { ProxyAgent, fetch as undiciFetch } from "undici";
 
 import type { HealthCheckConfig, ProbeResult } from "./types.js";
 
+export function resolveHealthCheckProbeUrl(params: {
+  healthCheck: HealthCheckConfig;
+  openclawConfig: Record<string, unknown>;
+}): string | null {
+  const { healthCheck, openclawConfig } = params;
+  if (healthCheck.kind === "telegram-bot-api") {
+    const token = readTelegramBotToken(openclawConfig);
+    if (!token) {
+      return null;
+    }
+    const base = healthCheck.telegramApiBaseUrl.replace(/\/+$/, "");
+    return `${base}/bot${token}/getMe`;
+  }
+  return healthCheck.url;
+}
+
 export async function runHealthCheck(params: {
   healthCheck: HealthCheckConfig;
   openclawConfig: Record<string, unknown>;
@@ -20,13 +36,12 @@ export async function runHealthCheck(params: {
 }
 
 async function runTelegramBotApiProbe(healthCheck: HealthCheckConfig, openclawConfig: Record<string, unknown>): Promise<ProbeResult> {
-  const token = readTelegramBotToken(openclawConfig);
-  if (!token) {
+  const url = resolveHealthCheckProbeUrl({ healthCheck, openclawConfig });
+  if (!url) {
     return { ok: false, countsAsFailure: false, summary: "未找到宿主 Telegram bot token，跳过切线。", statusCode: null };
   }
-  const base = healthCheck.telegramApiBaseUrl.replace(/\/+$/, "");
   return await runHttpProbe({
-    url: `${base}/bot${token}/getMe`,
+    url,
     method: healthCheck.method,
     timeoutMs: healthCheck.timeoutMs,
     expectedStatusCodes: [200],

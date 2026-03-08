@@ -1,7 +1,14 @@
 import { createDriver } from "./driver-factory.js";
-import { runHealthCheck } from "./health-check.js";
+import { resolveHealthCheckProbeUrl, runHealthCheck } from "./health-check.js";
 import { loadState, saveState } from "./state-store.js";
-import type { LoggerLike, RunIterationResult, RuntimeConfig, WatchdogState } from "./types.js";
+import type {
+  DriverTargetDelayResult,
+  LoggerLike,
+  NetworkProxyDriver,
+  RunIterationResult,
+  RuntimeConfig,
+  WatchdogState,
+} from "./types.js";
 
 export class NetworkProxyWatchdogService {
   private timer: NodeJS.Timeout | null = null;
@@ -103,7 +110,15 @@ export async function runWatchdogIteration(params: {
 
   const availableTargets = await driver.listTargets();
   const currentTarget = await safeReadCurrentTarget(driver, state.currentTarget);
-  const nextTarget = pickNextTarget({ candidates: config.switchPolicy.candidates, availableTargets, currentTarget });
+  const nextTarget = await pickNextTarget({
+    config,
+    openclawConfig,
+    driver,
+    logger,
+    candidates: config.switchPolicy.candidates,
+    availableTargets,
+    currentTarget,
+  });
   if (!nextTarget) {
     state.currentTarget = currentTarget;
     saveState(config, state);
@@ -123,31 +138,127 @@ export async function runWatchdogIteration(params: {
   return { probe, switched: true, switchResult, state };
 }
 
-function pickNextTarget(params: {
+async function pickNextTarget(params: {
+  config: RuntimeConfig;
+  openclawConfig: Record<string, unknown>;
+  driver: NetworkProxyDriver;
+  logger: LoggerLike;
   candidates: string[];
   availableTargets: string[];
   currentTarget: string | null;
-}): string | null {
-  const source = params.candidates.length
-    ? params.candidates.filter((candidate) => params.availableTargets.includes(candidate))
-    : params.availableTargets;
+}): Promise<string | null> {
+  const source = filterCandidateTargets(params.candidates, params.availableTargets);
 
   if (!source.length) {
     return null;
   }
 
-  if (!params.currentTarget) {
+  const lowestLatencyTarget = await pickLowestLatencyTelegramTarget({
+    config: params.config,
+    openclawConfig: params.openclawConfig,
+    driver: params.driver,
+    logger: params.logger,
+    targets: source,
+    currentTarget: params.currentTarget,
+  });
+  if (lowestLatencyTarget) {
+    return lowestLatencyTarget;
+  }
+
+  return pickNextTargetByOrder(source, params.currentTarget);
+}
+
+function filterCandidateTargets(candidates: string[], availableTargets: string[]): string[] {
+  return candidates.length
+    ? candidates.filter((candidate) => availableTargets.includes(candidate))
+    : availableTargets;
+}
+
+async function pickLowestLatencyTelegramTarget(params: {
+  config: RuntimeConfig;
+  openclawConfig: Record<string, unknown>;
+  driver: NetworkProxyDriver;
+  logger: LoggerLike;
+  targets: string[];
+  currentTarget: string | null;
+}): Promise<string | null> {
+  if (params.config.healthCheck.kind !== "telegram-bot-api") {
+    return null;
+  }
+  if (typeof params.driver.measureTargets !== "function") {
+    return null;
+  }
+
+  const probeUrl = resolveHealthCheckProbeUrl({
+    healthCheck: params.config.healthCheck,
+    openclawConfig: params.openclawConfig,
+  });
+  if (!probeUrl) {
+    params.logger.warn("[proxy-watchdog] 未找到 Telegram bot token，跳过最低延迟选线。");
+    return null;
+  }
+
+  const targetsToMeasure = params.targets.filter((target) => target !== params.currentTarget);
+  const measurementTargets = params.currentTarget ? targetsToMeasure : params.targets;
+  if (!measurementTargets.length) {
+    return null;
+  }
+  const results = await params.driver.measureTargets({
+    targets: measurementTargets,
+    url: probeUrl,
+    timeoutMs: params.config.healthCheck.timeoutMs,
+  });
+  const availableResults = results
+    .filter((item) => item.ok && item.delayMs !== null)
+    .sort((left, right) => {
+      if (left.delayMs === right.delayMs) {
+        return left.target.localeCompare(right.target);
+      }
+      return (left.delayMs ?? Number.POSITIVE_INFINITY) - (right.delayMs ?? Number.POSITIVE_INFINITY);
+    });
+
+  if (!availableResults.length) {
+    params.logger.warn(`[proxy-watchdog] 候选线路都未通过 Telegram 延迟测试，回退到顺序切线。${formatDelayResults(results)}`);
+    return null;
+  }
+
+  const best = availableResults[0] ?? null;
+  if (!best) {
+    return null;
+  }
+  params.logger.info(`[proxy-watchdog] 已按 Telegram 最低延迟优先选择线路：${best.target} (${best.delayMs}ms)。${formatDelayResults(availableResults)}`);
+  return best.target;
+}
+
+function pickNextTargetByOrder(source: string[], currentTarget: string | null): string | null {
+  if (!source.length) {
+    return null;
+  }
+
+  if (!currentTarget) {
     return source[0] ?? null;
   }
 
-  const index = source.indexOf(params.currentTarget);
+  const alternatives = source.filter((item) => item !== currentTarget);
+  if (!alternatives.length) {
+    return null;
+  }
+
+  const index = source.indexOf(currentTarget);
   if (index === -1) {
-    return source.find((item) => item !== params.currentTarget) ?? source[0] ?? null;
+    return alternatives[0] ?? null;
   }
-  if (source.length === 1) {
-    return source[0] ?? null;
+  return source.slice(index + 1).concat(source.slice(0, index)).find((item) => item !== currentTarget) ?? null;
+}
+
+function formatDelayResults(results: DriverTargetDelayResult[]): string {
+  if (!results.length) {
+    return "";
   }
-  return source[(index + 1) % source.length] ?? null;
+  const summary = results
+    .map((item) => item.delayMs !== null ? `${item.target}=${item.delayMs}ms` : `${item.target}=fail`)
+    .join(", ");
+  return ` 测试结果：${truncate(summary, 220)}`;
 }
 
 function inCooldown(state: WatchdogState, cooldownMs: number, nowIso: string): boolean {
@@ -164,4 +275,8 @@ async function safeReadCurrentTarget(driver: ReturnType<typeof createDriver>, fa
   } catch {
     return fallback;
   }
+}
+
+function truncate(value: string, maxLength: number): string {
+  return value.length > maxLength ? `${value.slice(0, Math.max(0, maxLength - 1))}…` : value;
 }

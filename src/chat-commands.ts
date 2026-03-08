@@ -176,6 +176,7 @@ async function renderDashboard(config: RuntimeConfig, deps: CommandDeps): Promis
     `驱动类型：${config.driver.type}`,
     `健康检查：${config.healthCheck.kind}`,
     `当前线路：${currentTarget ?? "<未知>"}`,
+    `自动策略：${formatAutoSwitchPolicy(config)}`,
     `连续失败：${state.failureCount}/${config.switchPolicy.failureThreshold}`,
     `最近探测：${formatLastProbe(state)}`,
     `最近切线：${formatLastSwitch(state)}`,
@@ -206,6 +207,7 @@ async function renderCurrentTarget(config: RuntimeConfig, deps: CommandDeps): Pr
     "当前线路",
     "",
     `当前线路：${currentTarget ?? "<未知>"}`,
+    `自动策略：${formatAutoSwitchPolicy(config)}`,
     `驱动类型：${config.driver.type}`,
   ].join("\n");
 }
@@ -220,6 +222,12 @@ async function renderSwitchMenu(config: RuntimeConfig, deps: CommandDeps, panelI
     `当前线路：${currentTarget ?? "<未知>"}`,
   ];
 
+  if (usesTelegramLowestLatencyPolicy(config)) {
+    lines.push("自动巡检策略：Telegram 可用且最低延迟优先");
+  } else {
+    lines.push("自动巡检策略：按候选顺序切线");
+  }
+
   if (targets.length === 0) {
     lines.push("没有读取到可切换线路。", "", "请检查驱动配置或稍后重试。");
     return withButtons(lines.join("\n"), buildMainButtons(panelId ?? randomFallbackPanelId()));
@@ -229,7 +237,7 @@ async function renderSwitchMenu(config: RuntimeConfig, deps: CommandDeps, panelI
     const mark = target === currentTarget ? "✅" : "·";
     lines.push(`${mark} ${index + 1}. ${target}`);
   }
-  lines.push("", "点击下方按钮可直接切换。", "可用“返回概览”回到主面板。");
+  lines.push("", "点击下方按钮可直接手动切换。", "自动巡检触发时仍会按上面的自动策略选线。", "可用“返回概览”回到主面板。");
 
   return withButtons(lines.join("\n"), buildSwitchButtons(panelId ?? randomFallbackPanelId(), targets, currentTarget));
 }
@@ -243,6 +251,7 @@ async function renderRunOnce(config: RuntimeConfig, deps: CommandDeps): Promise<
   const lines = [
     "即时巡检结果",
     "",
+    `自动策略：${formatAutoSwitchPolicy(config)}`,
     `探测结果：${result.probe.ok ? "成功" : "失败"}`,
     `探测摘要：${result.probe.summary}`,
     `已切线：${result.switched ? "是" : "否"}`,
@@ -441,6 +450,16 @@ function formatLastSwitch(state: WatchdogState): string {
 function formatAdminSummary(config: RuntimeConfig): string {
   if (config.commandAccess.adminSenderIds.length === 0) return "继承平台授权";
   return `${config.commandAccess.adminSenderIds.length} 个管理员`;
+}
+
+function formatAutoSwitchPolicy(config: RuntimeConfig): string {
+  return usesTelegramLowestLatencyPolicy(config)
+    ? "Telegram 可用且最低延迟优先"
+    : "按候选顺序切线";
+}
+
+function usesTelegramLowestLatencyPolicy(config: RuntimeConfig): boolean {
+  return config.driver.type === "mihomo" && config.healthCheck.kind === "telegram-bot-api";
 }
 
 function isAdminAuthorized(ctx: PluginCommandContext, config: RuntimeConfig): boolean {

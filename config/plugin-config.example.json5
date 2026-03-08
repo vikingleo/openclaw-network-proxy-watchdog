@@ -25,6 +25,8 @@
   switchPolicy: {
     failureThreshold: 3,
     switchCooldownMs: 300000,
+
+    // mihomo + telegram-bot-api 下，会优先从这些候选里选 Telegram 可用且延迟最低的线路。
     candidates: [
       "专项代理",
       "备用节点组"

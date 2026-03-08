@@ -1,4 +1,12 @@
-import type { LoggerLike, MihomoDriverConfig, NetworkProxyDriver, DriverDescribeResult, DriverSwitchResult } from "../types.js";
+import type {
+  DriverDelayProbeParams,
+  DriverDescribeResult,
+  DriverSwitchResult,
+  DriverTargetDelayResult,
+  LoggerLike,
+  MihomoDriverConfig,
+  NetworkProxyDriver,
+} from "../types.js";
 
 export class MihomoDriver implements NetworkProxyDriver {
   readonly type = "mihomo" as const;
@@ -55,6 +63,11 @@ export class MihomoDriver implements NetworkProxyDriver {
     return { from: current, to: target, changed: true };
   }
 
+  async measureTargets(params: DriverDelayProbeParams): Promise<DriverTargetDelayResult[]> {
+    const targets = Array.from(new Set(params.targets.map((item) => item.trim()).filter(Boolean)));
+    return await Promise.all(targets.map(async (target) => await this.measureTargetDelay(target, params.url, params.timeoutMs)));
+  }
+
   private async fetchGroup(): Promise<Record<string, unknown>> {
     const response = await fetch(`${this.config.controllerUrl}/proxies/${encodeURIComponent(this.config.groupName)}`, {
       headers: this.headers(),
@@ -73,6 +86,49 @@ export class MihomoDriver implements NetworkProxyDriver {
       ...(extra ?? {}),
     };
   }
+
+  private async measureTargetDelay(target: string, url: string, timeoutMs: number): Promise<DriverTargetDelayResult> {
+    const search = new URLSearchParams({
+      url,
+      timeout: String(Math.max(1, Math.floor(timeoutMs))),
+    });
+
+    try {
+      const response = await fetch(`${this.config.controllerUrl}/proxies/${encodeURIComponent(target)}/delay?${search.toString()}`, {
+        headers: this.headers(),
+      });
+
+      if (!response.ok) {
+        const body = (await response.text()).trim();
+        return {
+          target,
+          ok: false,
+          delayMs: null,
+          summary: body ? `HTTP ${response.status}: ${truncate(body, 160)}` : `HTTP ${response.status}`,
+        };
+      }
+
+      const payload = await response.json() as Record<string, unknown>;
+      const delayMs = readDelay(payload.delay);
+      if (delayMs === null) {
+        return { target, ok: false, delayMs: null, summary: "未返回有效延迟" };
+      }
+
+      return {
+        target,
+        ok: delayMs > 0,
+        delayMs: delayMs > 0 ? delayMs : null,
+        summary: delayMs > 0 ? `${delayMs}ms` : "延迟测试未通过",
+      };
+    } catch (error) {
+      return {
+        target,
+        ok: false,
+        delayMs: null,
+        summary: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
 }
 
 function resolveSecret(config: MihomoDriverConfig): string | null {
@@ -88,4 +144,15 @@ function readString(value: unknown): string | null {
   }
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function readDelay(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  return Math.max(0, Math.round(value));
+}
+
+function truncate(value: string, maxLength: number): string {
+  return value.length > maxLength ? `${value.slice(0, Math.max(0, maxLength - 1))}…` : value;
 }

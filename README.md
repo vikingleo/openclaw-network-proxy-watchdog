@@ -27,6 +27,7 @@
 - 健康检查主循环
 - 连续失败计数
 - 失败到阈值后自动切线
+- `mihomo + telegram-bot-api` 模式下优先选择 Telegram 可用且延迟最低的线路
 - `mihomo` 驱动
 - `custom-command` 驱动
 - `custom-webhook` 驱动
@@ -84,6 +85,9 @@
 - 通过按钮直接切线
 - 返回上一级面板而不刷屏
 
+在 `mihomo + telegram-bot-api` 模式下，面板会明确展示当前自动策略为“Telegram 可用且最低延迟优先”；
+手动按钮切线依旧可用，但不会改变自动巡检时的选线策略。
+
 ### 权限模型
 
 插件命令遵循两层控制：
@@ -124,6 +128,14 @@
 - controller secret（可选）
 - 代理组查询
 - 代理组切换
+- 单节点延迟测试 API（用于自动挑选 Telegram 延迟最低的可用线路）
+
+自动切线策略：
+
+- 当 `healthCheck.kind = telegram-bot-api` 且驱动为 `mihomo` 时，达到失败阈值后会对候选线路做 Telegram 连通性/延迟测试
+- 只在“Telegram 可用”的候选里排序，并优先切到延迟最低的那条
+- `switchPolicy.candidates` 不为空时，只会在这些候选里选；为空时则在驱动返回的全部目标里选
+- 若延迟测试不可用或全部失败，则回退到原来的顺序切线策略
 
 配置示例：
 
@@ -258,6 +270,7 @@
 - 自动读取宿主 OpenClaw 的 `channels.telegram.botToken`
 - 通过 `https://api.telegram.org/bot<TOKEN>/getMe` 探测 Telegram Bot API
 - 若返回 `401/404`，认为更像 token 配置问题，不触发切线
+- 在 `mihomo` 驱动下，自动切线时也会复用这个 Telegram 目标地址做候选线路延迟测试
 
 ### `http`
 

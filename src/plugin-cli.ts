@@ -45,7 +45,10 @@ export function registerProxyWatchdogCli(params: {
     .action(async () => {
       const config = resolveCliRuntimeConfig({ openclawConfig, pluginConfig });
       const driver = createDriver(config.driver, logger);
-      console.log(JSON.stringify(await driver.describe(), null, 2));
+      console.log(JSON.stringify({
+        autoSwitchPolicy: formatAutoSwitchPolicy(config),
+        describe: await driver.describe(),
+      }, null, 2));
     });
 
   root
@@ -81,7 +84,10 @@ export function registerProxyWatchdogCli(params: {
     .description("立即执行一次健康检查与必要切线")
     .action(async () => {
       const config = resolveCliRuntimeConfig({ openclawConfig, pluginConfig });
-      console.log(JSON.stringify(await runWatchdogIteration({ config, openclawConfig, logger }), null, 2));
+      console.log(JSON.stringify({
+        autoSwitchPolicy: formatAutoSwitchPolicy(config),
+        result: await runWatchdogIteration({ config, openclawConfig, logger }),
+      }, null, 2));
     });
 
   root
@@ -107,6 +113,7 @@ function summarizeConfig(config: RuntimeConfig, state: ReturnType<typeof loadSta
   return {
     enabled: config.enabled,
     stateFile: config.stateFile,
+    autoSwitchPolicy: formatAutoSwitchPolicy(config),
     healthCheck: {
       kind: config.healthCheck.kind,
       method: config.healthCheck.method,
@@ -120,6 +127,16 @@ function summarizeConfig(config: RuntimeConfig, state: ReturnType<typeof loadSta
     driverType: config.driver.type,
     state,
   };
+}
+
+function formatAutoSwitchPolicy(config: RuntimeConfig): string {
+  return usesTelegramLowestLatencyPolicy(config)
+    ? "Telegram 可用且最低延迟优先"
+    : "按候选顺序切线";
+}
+
+function usesTelegramLowestLatencyPolicy(config: RuntimeConfig): boolean {
+  return config.driver.type === "mihomo" && config.healthCheck.kind === "telegram-bot-api";
 }
 
 function buildSmokeConfig(config: RuntimeConfig): RuntimeConfig {
