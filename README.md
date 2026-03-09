@@ -410,6 +410,16 @@ npm install
 npm run build
 ```
 
+## 密钥扫描
+
+仓库已接入 `gitleaks`：
+
+- GitHub Actions 会在 `push`、`pull_request` 和手动触发时自动执行扫描：`.github/workflows/gitleaks.yml`
+- 仓库级规则配置位于 `.gitleaks.toml`
+- 本地已安装 `gitleaks` 时，可直接运行 `npm run scan:secrets`
+
+如果仓库未来迁移到 GitHub Organization，按 `gitleaks-action` 官方说明补充 `GITLEAKS_LICENSE` 即可；个人账号仓库通常不需要。
+
 ## 一键安装
 
 仓库内附带一套一键安装脚本：

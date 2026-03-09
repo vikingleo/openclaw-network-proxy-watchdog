@@ -21,7 +21,8 @@
   ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "scan:secrets": "gitleaks git --config .gitleaks.toml --redact --verbose"
   },
   "dependencies": {
     "undici": "^7.16.0"
