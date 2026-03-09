@@ -446,6 +446,36 @@ curl -fsSL https://raw.githubusercontent.com/vikingleo/openclaw-network-proxy-wa
 
 `bootstrap.sh` 会先执行 `git clone`/`git fetch`，再调用本地 `install.sh`。
 
+SSH 环境可直接复制这条远程安装命令：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vikingleo/openclaw-network-proxy-watchdog/master/scripts/bootstrap.sh | bash -s -- \
+  --ssh \
+  --openclaw-dir /srv/openclaw \
+  --driver mihomo \
+  --controller-url http://127.0.0.1:9090 \
+  --group-name 专项代理 \
+  --candidate 香港A \
+  --candidate 日本B \
+  --admin-sender telegram:YOUR_USER_ID
+```
+
+已有仓库时，如需执行升级 / 修复，也可直接复制这条命令：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vikingleo/openclaw-network-proxy-watchdog/master/scripts/bootstrap.sh | bash -s -- \
+  --openclaw-dir /srv/openclaw \
+  --driver mihomo \
+  --controller-url http://127.0.0.1:9090 \
+  --group-name 专项代理 \
+  --candidate 香港A \
+  --candidate 日本B \
+  --admin-sender telegram:YOUR_USER_ID \
+  --force
+```
+
+这条升级 / 修复命令会重新检查仓库、配置和软链接状态；若发现漂移或缺失，会自动重走安装并保留可恢复备份。
+
 脚本会执行这些动作：
 
 - 先检查目标宿主目录下的 `.openclaw/extensions` 是否存在
