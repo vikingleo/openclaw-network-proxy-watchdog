@@ -418,11 +418,11 @@ npm run build
 - `scripts/install.sh:1`
 - `scripts/install.mjs:1`
 
-远程一条命令示例：
+推荐用户直接复制这条远程安装命令：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/vikingleo/openclaw-network-proxy-watchdog/master/scripts/bootstrap.sh | bash -s -- \
-  --openclaw-dir /path/to/openclaw \
+  --openclaw-dir /srv/openclaw \
   --driver mihomo \
   --controller-url http://127.0.0.1:9090 \
   --group-name 专项代理 \
@@ -430,6 +430,19 @@ curl -fsSL https://raw.githubusercontent.com/vikingleo/openclaw-network-proxy-wa
   --candidate 日本B \
   --admin-sender telegram:YOUR_USER_ID
 ```
+
+这条命令默认会：
+
+- 从 `https://github.com/vikingleo/openclaw-network-proxy-watchdog` 拉取或更新仓库
+- 默认采用软链接安装
+- 自动处理新安装、升级、修复与配置补齐
+
+真正需要你替换的通常只有这几项：
+
+- `--openclaw-dir /srv/openclaw`：改成你的 OpenClaw 宿主目录
+- `--group-name 专项代理`：改成 Mihomo 里实际的代理组名称
+- `--candidate ...`：改成你的候选线路名
+- `--admin-sender telegram:YOUR_USER_ID`：改成真实 Telegram 管理员 ID
 
 `bootstrap.sh` 会先执行 `git clone`/`git fetch`，再调用本地 `install.sh`。
 
