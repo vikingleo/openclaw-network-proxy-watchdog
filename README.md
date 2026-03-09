@@ -446,6 +446,16 @@ curl -fsSL https://raw.githubusercontent.com/vikingleo/openclaw-network-proxy-wa
 
 `bootstrap.sh` 会先执行 `git clone`/`git fetch`，再调用本地 `install.sh`。
 
+最小化用户安装清单：
+
+- `OpenClaw` 宿主目录，例如 `/srv/openclaw`
+- Mihomo 控制器地址，例如 `http://127.0.0.1:9090`
+- 实际代理组名称，例如 `专项代理`
+- 至少一组可切换候选线路名称，例如 `香港A`、`日本B`
+- 一个真实 Telegram 管理员 ID，例如 `telegram:123456789`
+
+如果上面这 5 项都已经明确，通常直接执行推荐命令并替换对应参数即可。
+
 SSH 环境可直接复制这条远程安装命令：
 
 ```bash
