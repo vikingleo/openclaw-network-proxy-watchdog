@@ -420,6 +420,83 @@ npm run build
 
 如果仓库未来迁移到 GitHub Organization，按 `gitleaks-action` 官方说明补充 `GITLEAKS_LICENSE` 即可；个人账号仓库通常不需要。
 
+## 从 Clone 到安装完成
+
+如果你准备在一台新机器上，从源码仓库开始完成安装，推荐直接按下面顺序执行。
+
+### 1. 克隆仓库
+
+```bash
+git clone https://github.com/vikingleo/openclaw-network-proxy-watchdog.git
+cd openclaw-network-proxy-watchdog
+```
+
+### 2. 准备安装参数
+
+最少先确认这 5 项：
+
+- OpenClaw 宿主目录，例如 `/srv/openclaw`
+- 驱动类型，例如 `mihomo`
+- 控制器地址，例如 `http://127.0.0.1:9090`
+- 实际代理组名称，例如 `专项代理`
+- 至少一个管理员发送者，例如 `telegram:123456789`
+
+如果你走 `mihomo`，还需要准备至少一个候选线路名，例如 `香港A`、`日本B`。
+
+### 3. 执行本地安装脚本
+
+`mihomo` 最常见：
+
+```bash
+./scripts/install.sh \
+  --openclaw-dir /srv/openclaw \
+  --driver mihomo \
+  --controller-url http://127.0.0.1:9090 \
+  --group-name 专项代理 \
+  --candidate 香港A \
+  --candidate 日本B \
+  --admin-sender telegram:123456789
+```
+
+如果你走 `custom-webhook`：
+
+```bash
+./scripts/install.sh \
+  --openclaw-dir /srv/openclaw \
+  --driver custom-webhook \
+  --base-url http://127.0.0.1:18795/api \
+  --admin-sender telegram:123456789
+```
+
+脚本会自动完成：
+
+- `npm install` 和 `npm run build`
+- 将插件安装到宿主 `.openclaw/extensions/network-proxy-watchdog`
+- 写入或更新 `openclaw.json` 中的插件配置
+- 必要时创建备份和回滚脚本
+
+### 4. 验证安装结果
+
+先看 CLI 状态：
+
+```bash
+openclaw proxy-watchdog status
+```
+
+再看最近日志：
+
+```bash
+journalctl --user -u openclaw-gateway.service -n 80 --no-pager | rg 'proxy-watchdog|proxywd|network-proxy-watchdog'
+```
+
+如果你已经配置了 Telegram 管理员，还可以直接发：
+
+```text
+/proxywd status
+```
+
+看到状态摘要、当前线路或控制面板正常返回，就说明“clone -> 安装 -> 生效”这条链路已经走通。
+
 ## 一键安装
 
 仓库内附带一套一键安装脚本：

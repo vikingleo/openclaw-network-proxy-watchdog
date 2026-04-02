@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- README 补充“从 clone 到安装完成”的完整安装闭环，包含本地安装参数与验证步骤
 - 新增本地一键安装脚本与远程 bootstrap 脚本，支持检测 `.openclaw/extensions`、默认软链接安装、自动备份和回滚。
 
 ## 0.5.0
